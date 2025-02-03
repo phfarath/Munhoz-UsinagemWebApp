@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Operações</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        input, button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        .op-list {
+            list-style: none;
+            padding: 0;
+        }
+        .op-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        async function carregarOPs() {
+            const response = await fetch("/ops");
+            const ops = await response.json();
+            const lista = document.getElementById("lista_ops");
+            lista.innerHTML = "";
+            ops.forEach(op => {
+                lista.innerHTML += `
+                    <li class="op-item" onclick="toggleDetalhes('${op.numero_op}')">
+                        OP ${op.numero_op}
+                        <div id="detalhes-${op.numero_op}" class="hidden">
+                            Torno: ${op.torno}, Fresa: ${op.fresa}, Ajustagem: ${op.ajustagem}
+                        </div>
+                    </li>`;
+            });
+        }
+
+        async function cadastrarOP() {
+            const numero_op = document.getElementById("numero_op").value;
+            const torno = document.getElementById("torno").value;
+            const fresa = document.getElementById("fresa").value;
+            const ajustagem = document.getElementById("ajustagem").value;
+
+            const response = await fetch("/op", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({numero_op, torno, fresa, ajustagem})
+            });
+
+            if (response.ok) {
+                alert("OP cadastrada!");
+                carregarOPs();
+            } else {
+                alert("Erro ao cadastrar OP.");
+            }
+        }
+
+        async function buscarOP() {
+            const numero_op = document.getElementById("buscar_numero_op").value;
+            const response = await fetch(`/op/${numero_op}`);
+            const resultado = document.getElementById("resultado_busca");
+
+            if (response.ok) {
+                const op = await response.json();
+                resultado.innerHTML = `OP ${op.numero_op}: Torno ${op.torno}, Fresa ${op.fresa}, Ajustagem ${op.ajustagem}`;
+            } else {
+                resultado.innerHTML = "OP não encontrada.";
+            }
+        }
+
+        async function registrarHoras() {
+            const numero_op = document.getElementById("reg_numero_op").value;
+            const torno = parseFloat(document.getElementById("reg_torno").value) || 0;
+            const fresa = parseFloat(document.getElementById("reg_fresa").value) || 0;
+            const ajustagem = parseFloat(document.getElementById("reg_ajustagem").value) || 0;
+
+            const response = await fetch(`/op/${numero_op}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({torno, fresa, ajustagem})
+            });
+
+            if (response.ok) {
+                alert("Horas registradas com sucesso!");
+                carregarOPs();
+            } else {
+                alert("Erro ao registrar horas.");
+            }
+        }
+
+        function toggleDetalhes(numero_op) {
+            const detalhes = document.getElementById(`detalhes-${numero_op}`);
+            detalhes.classList.toggle("hidden");
+        }
+
+        function filtrarOPs() {
+            const filtro = document.getElementById("buscar_numero_op").value.toLowerCase();
+            document.querySelectorAll(".op-item").forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(filtro) ? "block" : "none";
+            });
+        }
+    </script>
+</head>
+<body onload="carregarOPs()">
+    <h1>Painel de Operações</h1>
+
+    <h2>Lista de OPs</h2>
+    <input type="text" id="buscar_numero_op" placeholder="Buscar OP" onkeyup="filtrarOPs()">
+    <ul id="lista_ops" class="op-list"></ul>
+
+    <h2>Cadastrar Nova OP</h2>
+    <input type="text" id="numero_op" placeholder="Número da OP">
+    <input type="number" id="torno" placeholder="Minutos no Torno">
+    <input type="number" id="fresa" placeholder="Minutos na Fresa">
+    <input type="number" id="ajustagem" placeholder="Minutos na Ajustagem">
+    <button onclick="cadastrarOP()">Cadastrar</button>
+
+    <h2>Registrar Horas em uma OP</h2>
+    <input type="text" id="reg_numero_op" placeholder="Número da OP">
+    <input type="number" id="reg_torno" placeholder="Horas Torno">
+    <input type="number" id="reg_fresa" placeholder="Horas Fresa">
+    <input type="number" id="reg_ajustagem" placeholder="Horas Ajustagem">
+    <button onclick="registrarHoras()">Registrar</button>
+</body>
+</html>
