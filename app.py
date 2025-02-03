@@ -1,12 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)  # Permitir requisições de outros domínios
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///empresa_app.db'
+
+# Configuração do PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://munhoz_database_user:IqfoBG8IwciNcF3JXnAEDWEsI7f0sXSX@dpg-cuge219opnds739a38kg-a/munhoz_database'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Inicializar o banco de dados
 db = SQLAlchemy(app)
 
 # Modelo da OP
