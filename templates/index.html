@@ -37,17 +37,34 @@
         }
     </style>
     <script>
+
+        function checkAdmin() {
+            fetch('/get_user_role')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.is_admin) {
+                        document.querySelectorAll(".admin_section").forEach(section => {
+                            section.style.display = "none";
+                        });
+                    }
+                })
+                .catch(error => console.error("Erro ao verificar permissões:", error));
+        }
+
         async function carregarOPs() {
             const response = await fetch("/ops");
             const ops = await response.json();
             const lista = document.getElementById("lista_ops");
             lista.innerHTML = "";
+
             ops.forEach(op => {
                 lista.innerHTML += `
                     <li class="op-item" onclick="toggleDetalhes('${op.numero_op}')">
-                        OP ${op.numero_op}
+                        <strong>OP ${op.numero_op}</strong>
                         <div id="detalhes-${op.numero_op}" class="hidden">
-                            Torno: ${op.torno}, Fresa: ${op.fresa}, Ajustagem: ${op.ajustagem}
+                            <p>Torno: ${op.torno} min (Registrados: ${op.minutos_registrados_torno} min, Eficiência: ${op.eficiencia_torno}%)</p>
+                            <p>Fresa: ${op.fresa} min (Registrados: ${op.minutos_registrados_fresa} min, Eficiência: ${op.eficiencia_fresa}%)</p>
+                            <p>Ajustagem: ${op.ajustagem} min (Registrados: ${op.minutos_registrados_ajustagem} min, Eficiência: ${op.eficiencia_ajustagem}%)</p>
                         </div>
                     </li>`;
             });
@@ -65,44 +82,31 @@
                 body: JSON.stringify({numero_op, torno, fresa, ajustagem})
             });
 
+            const result = await response.json();
+            alert(result.message);
             if (response.ok) {
-                alert("OP cadastrada!");
-                carregarOPs();
-            } else {
-                alert("Erro ao cadastrar OP.");
+                carregarOPs(); 
             }
         }
 
-        async function buscarOP() {
-            const numero_op = document.getElementById("buscar_numero_op").value;
-            const response = await fetch(`/op/${numero_op}`);
-            const resultado = document.getElementById("resultado_busca");
-
-            if (response.ok) {
-                const op = await response.json();
-                resultado.innerHTML = `OP ${op.numero_op}: Torno ${op.torno}, Fresa ${op.fresa}, Ajustagem ${op.ajustagem}`;
-            } else {
-                resultado.innerHTML = "OP não encontrada.";
-            }
-        }
 
         async function registrarHoras() {
             const numero_op = document.getElementById("reg_numero_op").value;
-            const torno = parseFloat(document.getElementById("reg_torno").value) || 0;
-            const fresa = parseFloat(document.getElementById("reg_fresa").value) || 0;
-            const ajustagem = parseFloat(document.getElementById("reg_ajustagem").value) || 0;
+            const inicio = document.getElementById("reg_inicio").value;
+            const fim = document.getElementById("reg_fim").value;
+            const setor = document.getElementById("reg_setor").value;
 
             const response = await fetch(`/op/${numero_op}`, {
                 method: "PUT",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({torno, fresa, ajustagem})
+                body: JSON.stringify({inicio, fim, setor})
             });
 
             if (response.ok) {
-                alert("Horas registradas com sucesso!");
+                alert("Minutos registrados com sucesso!");
                 carregarOPs();
             } else {
-                alert("Erro ao registrar horas.");
+                alert("Erro ao registrar minutos.");
             }
         }
 
@@ -111,33 +115,56 @@
             detalhes.classList.toggle("hidden");
         }
 
-        function filtrarOPs() {
-            const filtro = document.getElementById("buscar_numero_op").value.toLowerCase();
-            document.querySelectorAll(".op-item").forEach(item => {
-                item.style.display = item.innerText.toLowerCase().includes(filtro) ? "block" : "none";
-            });
+        async function removerOP() {
+        const numero_op = document.getElementById("del_numero_op").value;
+
+        const response = await fetch(`/op/${numero_op}`, {
+            method: "DELETE"
+        });
+
+        if (response.ok) {
+            alert("OP removida com sucesso!");
+            carregarOPs();
+        } else {
+            alert("Erro ao remover OP.");
+            }
         }
+
     </script>
 </head>
-<body onload="carregarOPs()">
+<body onload="checkAdmin(); carregarOPs();">
     <h1>Painel de Operações</h1>
+
+    <a href="/logout">Logout</a>
 
     <h2>Lista de OPs</h2>
     <input type="text" id="buscar_numero_op" placeholder="Buscar OP" onkeyup="filtrarOPs()">
     <ul id="lista_ops" class="op-list"></ul>
 
-    <h2>Cadastrar Nova OP</h2>
-    <input type="text" id="numero_op" placeholder="Número da OP">
-    <input type="number" id="torno" placeholder="Minutos no Torno">
-    <input type="number" id="fresa" placeholder="Minutos na Fresa">
-    <input type="number" id="ajustagem" placeholder="Minutos na Ajustagem">
-    <button onclick="cadastrarOP()">Cadastrar</button>
+    <h2 class="admin_section">Cadastrar Nova OP</h2>
+    <div class="admin_section">
+        <input type="text" id="numero_op" placeholder="Número da OP">
+        <input type="number" id="torno" placeholder="Minutos no Torno">
+        <input type="number" id="fresa" placeholder="Minutos na Fresa">
+        <input type="number" id="ajustagem" placeholder="Minutos na Ajustagem">
+        <button onclick="cadastrarOP()">Cadastrar</button>
+    </div>
 
     <h2>Registrar Horas em uma OP</h2>
     <input type="text" id="reg_numero_op" placeholder="Número da OP">
-    <input type="number" id="reg_torno" placeholder="Horas Torno">
-    <input type="number" id="reg_fresa" placeholder="Horas Fresa">
-    <input type="number" id="reg_ajustagem" placeholder="Horas Ajustagem">
+    <input type="time" id="reg_inicio" placeholder="Hora de Início">
+    <input type="time" id="reg_fim" placeholder="Hora de Fim">
+    <select id="reg_setor">
+        <option value="torno">Torno</option>
+        <option value="fresa">Fresa</option>
+        <option value="ajustagem">Ajustagem</option>
+    </select>
     <button onclick="registrarHoras()">Registrar</button>
+
+    <h2 class="admin_section">Remover uma OP</h2>
+    <div class="admin_section">
+        <input type="text" id="del_numero_op" placeholder="Número da OP">
+        <button onclick="removerOP()">Remover</button>
+    </div>
 </body>
 </html>

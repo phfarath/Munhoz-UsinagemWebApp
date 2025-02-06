@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+        }
+    </style>
+    <script>
+        function login(role) {
+            let username = role === 'admin' ? 'admin' : 'operador';
+            let password = role === 'admin' ? 'admin123' : 'senha123';
+            
+            fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `username=${username}&password=${password}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert('Erro no login!');
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Login</h1>
+    <button onclick="login('admin')">Entrar como Administrador</button>
+    <button onclick="login('operador')">Entrar como Operador</button>
+</body>
+</html>
