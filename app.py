@@ -10,7 +10,7 @@ app.secret_key = 'sua_chave_secreta_super_segura'
 CORS(app)  # Permitir requisições de outros domínios
 
 # Configuração do banco de dados com fallback para SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "postgresql://munhoz_database_user:IqfoBG8IwciNcF3JXnAEDWEsI7f0sXSX@dpg-cuge219opnds739a38kg-a.oregon-postgres.render.com/munhoz_database")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "postgresql://munhoz_database_042x_user:lcYKnJmsOhibYRnth8lip4YXyPSRUuKc@dpg-cumab9pu0jms73bmja8g-a.oregon-postgres.render.com/munhoz_database_042x")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
