@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,19 +13,25 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
-        h1, h2 {
+
+        h1,
+        h2 {
             text-align: center;
         }
-        input, button {
+
+        input,
+        button {
             display: block;
             width: 100%;
             margin: 10px 0;
             padding: 10px;
         }
+
         .op-list {
             list-style: none;
             padding: 0;
         }
+
         .op-item {
             background: white;
             padding: 10px;
@@ -32,6 +39,7 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
         .hidden {
             display: none;
         }
@@ -52,43 +60,100 @@
         }
 
         async function carregarOPs() {
-            const response = await fetch("/ops");
-            const ops = await response.json();
-            const lista = document.getElementById("lista_ops");
-            lista.innerHTML = "";
+            try {
+                const response = await fetch("/ops");
+                const ops = await response.json();
+                const lista = document.getElementById("lista_ops");
+                lista.innerHTML = "";
 
-            ops.forEach(op => {
-                lista.innerHTML += `
-                    <li class="op-item" onclick="toggleDetalhes('${op.numero_op}')">
-                        <strong>OP ${op.numero_op}</strong>
-                        <div id="detalhes-${op.numero_op}" class="hidden">
-                            <p>Torno: ${op.torno} min (Registrados: ${op.minutos_registrados_torno} min, Eficiência: ${op.eficiencia_torno}%)</p>
-                            <p>Fresa: ${op.fresa} min (Registrados: ${op.minutos_registrados_fresa} min, Eficiência: ${op.eficiencia_fresa}%)</p>
-                            <p>Ajustagem: ${op.ajustagem} min (Registrados: ${op.minutos_registrados_ajustagem} min, Eficiência: ${op.eficiencia_ajustagem}%)</p>
-                        </div>
-                    </li>`;
-            });
+                ops.forEach(op => {
+                    lista.innerHTML += `
+                <li class="op-item" onclick="toggleDetalhes('${op.numero_op}')">
+                    <strong>OP ${op.numero_op}</strong>
+                    <div id="detalhes-${op.numero_op}" class="hidden">
+                        <p>Torno: ${op.torno} min (Registrados: ${op.minutos_registrados_torno} min, Eficiência: ${op.eficiencia_torno}%)</p>
+                        <p>Fresa: ${op.fresa} min (Registrados: ${op.minutos_registrados_fresa} min, Eficiência: ${op.eficiencia_fresa}%)</p>
+                        <p>Ajustagem: ${op.ajustagem} min (Registrados: ${op.minutos_registrados_ajustagem} min, Eficiência: ${op.eficiencia_ajustagem}%)</p>
+                    </div>
+                </li>`;
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar OPs:", error);
+                document.getElementById("lista_ops").innerHTML = `<p>Erro ao carregar OPs.</p>`;
+            }
         }
 
         async function cadastrarOP() {
             const numero_op = document.getElementById("numero_op").value;
-            const torno = document.getElementById("torno").value;
-            const fresa = document.getElementById("fresa").value;
-            const ajustagem = document.getElementById("ajustagem").value;
+            // Convert string inputs to numbers with parseInt
+            const torno = parseInt(document.getElementById("torno").value) || 0;
+            const fresa = parseInt(document.getElementById("fresa").value) || 0;
+            const ajustagem = parseInt(document.getElementById("ajustagem").value) || 0;
 
-            const response = await fetch("/op", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({numero_op, torno, fresa, ajustagem})
-            });
+            try {
+                console.log("Sending data:", { numero_op, torno, fresa, ajustagem });
 
-            const result = await response.json();
-            alert(result.message);
-            if (response.ok) {
-                carregarOPs();
+                const response = await fetch("/op", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        numero_op,
+                        torno,
+                        fresa,
+                        ajustagem,
+                        minutos_registrados_torno: 0,
+                        minutos_registrados_fresa: 0,
+                        minutos_registrados_ajustagem: 0
+                    })
+                });
+
+                const result = await response.json();
+                console.log("Response:", result);
+                alert(result.message);
+                if (response.ok) {
+                    carregarOPs();
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Erro ao cadastrar OP: " + error);
             }
         }
 
+        let searchTimeout;
+
+        async function buscarOP() {
+            clearTimeout(searchTimeout);
+
+            searchTimeout = setTimeout(async () => {
+                const numero_op = document.getElementById("buscar_numero_op").value.trim();
+
+                if (!numero_op) {
+                    carregarOPs(); // Se o campo estiver vazio, carrega todas as OPs
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/op/${numero_op}`, { method: "GET" });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        document.getElementById("lista_ops").innerHTML = `
+                    <li class="op-item">
+                        <strong>OP ${result.numero_op}</strong>
+                        <p>Torno: ${result.torno} min (Registrados: ${result.minutos_registrados_torno} min, Eficiência: ${result.eficiencia_torno}%)</p>
+                        <p>Fresa: ${result.fresa} min (Registrados: ${result.minutos_registrados_fresa} min, Eficiência: ${result.eficiencia_fresa}%)</p>
+                        <p>Ajustagem: ${result.ajustagem} min (Registrados: ${result.minutos_registrados_ajustagem} min, Eficiência: ${result.eficiencia_ajustagem}%)</p>
+                    </li>`;
+                    } else {
+                        document.getElementById("lista_ops").innerHTML = `<p>OP não encontrada.</p>`;
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar OP:", error);
+                    document.getElementById("lista_ops").innerHTML = `<p>Erro ao buscar OP.</p>`;
+                }
+            }, 500);
+        }
 
         async function registrarHoras() {
             const numero_op = document.getElementById("reg_numero_op").value;
@@ -96,16 +161,20 @@
             const fim = document.getElementById("reg_fim").value;
             const setor = document.getElementById("reg_setor").value;
 
-            const response = await fetch(`/op/${numero_op}`, {
-                method: "PUT",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({inicio, fim, setor})
-            });
+            try {
+                const response = await fetch(`/op/${numero_op}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ inicio, fim, setor })
+                });
 
-            if (response.ok) {
-                alert("Minutos registrados com sucesso!");
-                carregarOPs();
-            } else {
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    carregarOPs();  // Atualiza a lista de OPs na tela
+                }
+            } catch (error) {
+                console.error("Erro ao registrar minutos:", error);
                 alert("Erro ao registrar minutos.");
             }
         }
@@ -116,29 +185,34 @@
         }
 
         async function removerOP() {
-        const numero_op = document.getElementById("del_numero_op").value;
+            const numero_op = document.getElementById("del_numero_op").value;
 
-        const response = await fetch(`/op/${numero_op}`, {
-            method: "DELETE"
-        });
+            try {
+                const response = await fetch(`/op/${numero_op}`, {
+                    method: "DELETE"
+                });
 
-        if (response.ok) {
-            alert("OP removida com sucesso!");
-            carregarOPs();
-        } else {
-            alert("Erro ao remover OP.");
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    carregarOPs();  // Atualiza a lista de OPs na tela
+                }
+            } catch (error) {
+                console.error("Erro ao remover OP:", error);
+                alert("Erro ao remover OP.");
             }
         }
 
     </script>
 </head>
+
 <body onload="checkAdmin(); carregarOPs();">
     <h1>Painel de Operações</h1>
 
     <a href="/logout">Logout</a>
 
     <h2>Lista de OPs</h2>
-    <input type="text" id="buscar_numero_op" placeholder="Buscar OP" onkeyup="filtrarOPs()">
+    <input type="text" id="buscar_numero_op" placeholder="Buscar OP" onkeyup="buscarOP()">
     <ul id="lista_ops" class="op-list"></ul>
 
     <h2 class="admin_section">Cadastrar Nova OP</h2>
@@ -167,4 +241,5 @@
         <button onclick="removerOP()">Remover</button>
     </div>
 </body>
+
 </html>
