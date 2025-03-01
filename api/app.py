@@ -397,5 +397,5 @@ def selecao_operadores():
     return render_template('selecao_operador.html')
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
