@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleção de Operador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        button {
+            width: 200px;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        .voltar{
+            width: auto;
+            height: auto;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>Selecione o Operador</h1>
+    <button class ="voltar" onclick="voltarPagina()">Voltar</button>
+    <div id="lista_operadores"></div>
+
+    <script>
+        async function carregarOperadores() {
+            const response = await fetch('/operadores');
+            const operadores = await response.json();
+            const lista = document.getElementById("lista_operadores");
+
+            operadores.forEach(op => {
+                let maquinas = [];
+                if (op.torno) maquinas.push("Torno");
+                if (op.fresa) maquinas.push("Fresa");
+                if (op.ajustagem) maquinas.push("Ajustagem");
+
+                lista.innerHTML += `
+                    <button onclick="selecionarOperador('${op.id}', '${op.nome}')">
+                        ${op.nome} - ${maquinas.join(" e ")}
+                    </button>
+                    <br>`;
+            });
+        }
+
+        function selecionarOperador(id, nome) {
+            sessionStorage.setItem("operador_id", id);
+            sessionStorage.setItem("operador_nome", nome);
+            window.location.href = '/operador/' + id;
+        }
+
+        function voltarPagina() {
+            window.location.href = "/login";
+        }
+
+        window.onload = carregarOperadores;
+    </script>
+</body>
+
+</html>

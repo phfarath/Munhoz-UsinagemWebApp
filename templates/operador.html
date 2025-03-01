@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Operador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Painel do Operador</h1>
+    <button onclick="voltarPagina()">Voltar</button>
+    <h2>Bem-vindo, <span id="operador_nome"></span>!</h2>
+
+    <h3>Registrar Horas</h3>
+    <select id="reg_op">
+        <option value="" disabled selected>Selecione uma OP</option>
+    </select>
+    <select id="reg_setor">
+        <option value="" disabled selected>Selecione um setor</option>
+    </select>
+    <input type="time" id="reg_inicio" placeholder="Hora Inicial">
+    <input type="time" id="reg_fim" placeholder="Hora Final">
+    <button onclick="registrarHoras()">Registrar</button>
+
+    <h3>Eficiência</h3>
+    <p id="eficiencia"></p>
+
+    <script>
+        let operador_id = sessionStorage.getItem("operador_id");
+        let operador_nome = sessionStorage.getItem("operador_nome");
+
+        if (!operador_id || !operador_nome) {
+            alert("Erro: Operador não selecionado. Redirecionando...");
+            window.location.href = "/selecao_operadores";
+        } else {
+            document.getElementById("operador_nome").innerText = operador_nome;
+        }
+
+        function voltarPagina() {
+            window.location.href = "/selecao_operador";
+        }
+
+        async function carregarOPs() {
+            try {
+                console.log("Buscando OPs disponíveis...");
+                const response = await fetch('/api/ops');
+                if (!response.ok) throw new Error("Erro ao buscar OPs");
+
+                const ops = await response.json();
+                console.log("OPs recebidas:", ops);
+
+                let select = document.getElementById("reg_op");
+                select.innerHTML = '<option value="" disabled selected>Selecione uma OP</option>';
+
+                ops.forEach(op => {
+                    select.innerHTML += `<option value="${op.numero_op}">${op.numero_op}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar OPs:", error);
+                alert("Erro ao carregar OPs. Verifique o console.");
+            }
+        }
+
+        async function carregarSetores() {
+            try {
+                console.log(`Buscando dados do operador com ID: ${operador_id}`);
+                const response = await fetch(`/api/operador/${operador_id}`);
+
+                if (!response.ok) {
+                    let errorText = await response.text();
+                    throw new Error(`Erro na requisição: ${response.status} - ${response.statusText} \n${errorText}`);
+                }
+
+                const operador = await response.json();
+                console.log("Dados do operador recebidos:", operador);
+
+                document.getElementById("operador_nome").innerText = operador.nome;  // Exibe o nome do operador
+
+                let select = document.getElementById("reg_setor");
+                select.innerHTML = '<option value="" disabled selected>Selecione um setor</option>';
+
+                let setores = [];
+                if (operador.torno === true) setores.push("torno");
+                if (operador.fresa === true) setores.push("fresa");
+                if (operador.ajustagem === true) setores.push("ajustagem");
+
+                console.log("Setores permitidos:", setores);
+
+                if (setores.length === 0) {
+                    select.innerHTML = '<option value="" disabled>Sem setores atribuídos</option>';
+                } else {
+                    setores.forEach(setor => {
+                        select.innerHTML += `<option value="${setor}">${setor.charAt(0).toUpperCase() + setor.slice(1)}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao carregar setores:", error);
+                alert(`Erro ao carregar setores: ${error.message}`);
+            }
+        }
+
+
+        async function registrarHoras() {
+            let operador_id = sessionStorage.getItem("operador_id");
+            let numero_op = document.getElementById("reg_op").value;
+            let setor = document.getElementById("reg_setor").value;
+            let inicio = document.getElementById("reg_inicio").value;
+            let fim = document.getElementById("reg_fim").value;
+
+            if (!operador_id || !numero_op || !setor || !inicio || !fim) {
+                alert("Preencha todos os campos antes de registrar!");
+                return;
+            }
+
+            console.log("Enviando dados:", { operador_id, numero_op, setor, inicio, fim });
+
+            try {
+                const response = await fetch(`/registrar_apontamento`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ operador_id, numero_op, setor, inicio, fim })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Erro ao registrar apontamento");
+                }
+
+                console.log("Resposta da API:", data);
+
+                let eficiencia = data.eficiencia !== undefined ? `${data.eficiencia}%` : "Não calculada";
+                document.getElementById("eficiencia").innerText = `Eficiência: ${eficiencia}`;
+
+                alert("Registro realizado com sucesso!");
+            } catch (error) {
+                console.error("Erro ao registrar horas:", error);
+                alert("Erro ao registrar horas. Verifique o console.");
+            }
+        }
+
+
+        window.onload = function () {
+            carregarOPs();
+            carregarSetores();
+        };
+    </script>
+</body>
+
+</html>
