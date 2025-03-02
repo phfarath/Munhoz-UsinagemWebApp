@@ -3,8 +3,17 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from datetime import datetime
-from supabase import create_client, Client
 from dotenv import load_dotenv
+
+# Adicionando logs de depuração
+print("Iniciando aplicação Flask...")
+
+try:
+    from supabase import create_client, Client
+    print("Supabase importado com sucesso!")
+except ModuleNotFoundError as e:
+    print(f"Erro ao importar Supabase: {e}")
+
 
 # Carregar variáveis de ambiente
 load_dotenv()
