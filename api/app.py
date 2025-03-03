@@ -23,7 +23,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="api/templates")
 app.secret_key = 'sua_chave_secreta_super_segura'
 CORS(app)
 
