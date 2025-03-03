@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "source": "api/app",
+      "src": "api/app.py",
       "use": "@vercel/python",
       "configuration": {
         "maxLambdaSize": "15mb",
